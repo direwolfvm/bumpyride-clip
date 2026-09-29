@@ -141,3 +141,10 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Ride footage and local verification artifacts
+.DS_Store
+sample_video/
+output/
+.playwright-cli/
+*.bumpyclip.json

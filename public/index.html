@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>BumpyRide Clip — Your ride, in focus</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23cf233b'/%3E%3Ctext x='10' y='31' font-family='sans-serif' font-size='32' fill='%23ffffff'%3Eb%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <a class="brand" href="/" aria-label="BumpyRide Clip home"
+        ><span class="brand-icon" aria-hidden="true"
+          ><svg
+            viewBox="0 0 40 40"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="10" cy="27" r="7" />
+            <circle cx="31" cy="27" r="7" />
+            <path
+              d="M10 27l7-14 8 14H10l10-9h8m3 9-5-17h-5m-8 3h7"
+            /></svg></span
+        ><span>BumpyRide <strong>Clip</strong></span></a
+      >
+      <span class="local-badge"><span class="dot"></span> LOCAL WORKSPACE</span>
+      <div class="header-actions">
+        <button id="open-project" class="quiet">Open project</button
+        ><button id="save-project">Save project <span>↗</span></button
+        ><button id="finish" class="quiet">Finish session</button>
+      </div>
+    </header>
+    <main>
+      <div class="project-heading">
+        <div>
+          <div class="eyebrow">
+            <span class="district-flag" aria-hidden="true"
+              ><span>★★★</span></span
+            >
+            THE DISTRICT / RIDE REVIEW
+          </div>
+          <h1 id="project-title">Every moment worth keeping.</h1>
+          <p id="project-subtitle">
+            Turn your ride reports into clips. Everything stays on your
+            computer.
+          </p>
+        </div>
+        <span class="project-state" id="project-state"
+          >Start a new project</span
+        >
+      </div>
+      <section class="setup-grid" aria-label="Project setup">
+        <div class="setup-card">
+          <div class="card-heading">
+            <span class="step">01</span>
+            <h2>The ride</h2>
+            <span class="small-badge" id="ride-badge">JSON</span>
+          </div>
+          <div id="ride-summary">
+            <p class="setup-copy">Your reports are the starting point.</p>
+            <p class="muted">Open a ride from BumpyRide’s iCloud Documents.</p>
+          </div>
+          <div class="button-row">
+            <button id="open-ride">＋ Open ride JSON</button
+            ><button id="cloud-rides" class="quiet">Browse iCloud</button>
+          </div>
+        </div>
+        <div class="setup-card">
+          <div class="card-heading">
+            <span class="step">02</span>
+            <h2>The footage</h2>
+            <span class="small-badge" id="video-badge">0 FILES</span>
+          </div>
+          <div id="source-summary">
+            <p class="setup-copy">One ride. As many files as it takes.</p>
+            <p class="muted">
+              Link originals in place, including files over 4 GB.
+            </p>
+          </div>
+          <div class="button-row">
+            <button id="add-videos">＋ Add videos</button
+            ><button id="source-settings" class="quiet">Manage files</button>
+          </div>
+        </div>
+        <div class="setup-card">
+          <div class="card-heading">
+            <span class="step">03</span>
+            <h2>The alignment</h2>
+            <span class="small-badge" id="sync-badge">NOT SET</span>
+          </div>
+          <div id="sync-summary">
+            <p class="setup-copy">A reliable start, from your ride.</p>
+            <p class="muted">
+              A Video Sync report sets the first video’s start.
+            </p>
+          </div>
+          <button id="sync-settings" class="quiet link-button">
+            Adjust video sync <span>↗</span>
+          </button>
+        </div>
+      </section>
+      <section class="workspace">
+        <aside class="event-panel">
+          <div class="panel-heading">
+            <h2>Ride events <span id="event-count">0</span></h2>
+            <button id="select-all" class="quiet">Select all</button>
+          </div>
+          <div class="event-filters">
+            <label class="sr-only" for="filter">Filter events</label
+            ><select id="filter">
+              <option value="all">All events</option>
+              <option value="close-call">Close calls</option>
+              <option value="blocked-lane">Blocked lanes</option>
+              <option value="custom">Custom events</option>
+              <option value="unreviewed">Not reviewed</option></select
+            ><span id="review-count">0 reviewed</span>
+          </div>
+          <div id="event-list" class="event-list">
+            <div class="empty-list">
+              <span class="empty-symbol">⚑</span>
+              <h3>Your reports, lined up.</h3>
+              <p>
+                Close calls, blocked lanes, and custom events will appear here.
+              </p>
+              <small>Hard brakes are left out.</small>
+            </div>
+          </div>
+          <div class="reel-bar">
+            <div>
+              <strong id="selected-count">0 clips selected</strong
+              ><span id="reel-duration">Build a reel from your ride</span>
+            </div>
+            <button id="export-reel" class="primary" disabled>
+              Export reel <span>↗</span>
+            </button>
+          </div>
+        </aside>
+        <div class="editor-panel">
+          <div class="editor-heading">
+            <div>
+              <span class="eyebrow" id="active-kicker">CLIP PREVIEW</span>
+              <h2 id="active-title">Find the story in your ride.</h2>
+            </div>
+            <span id="active-time" class="mono"></span>
+          </div>
+          <div class="video-stage" id="video-stage">
+            <video
+              id="video"
+              controls
+              playsinline
+              preload="metadata"
+              hidden
+            ></video>
+            <div id="video-empty" class="video-empty">
+              <div class="road-art" aria-hidden="true">
+                <svg
+                  viewBox="0 0 360 140"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <g
+                    stroke="#839cb8"
+                    stroke-width="1.5"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M14 91h332M57 90l4-64 5-12 5 12 4 64M61 26h10" />
+                    <path
+                      d="M217 91V72h18V60h10V49h44v11h10v12h18v19M245 49c0-20 44-20 44 0M252 35c0-13 30-13 30 0M267 25V14m-3 0h6M242 61h50M230 73h74"
+                    />
+                    <path
+                      d="M248 65v19m12-19v19m13-19v19m12-19v19M226 81v10m82-10v10"
+                    />
+                  </g>
+                  <path
+                    d="M24 113h312M37 124h40m18 0h40m18 0h40m18 0h40m18 0h40"
+                    stroke="#577592"
+                    stroke-width="1.5"
+                  />
+                  <g
+                    stroke="#ffffff"
+                    stroke-width="3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="132" cy="91" r="20" />
+                    <circle cx="198" cy="91" r="20" />
+                    <path
+                      d="M132 91l22-38 24 38h-46l31-27h25m10 27-16-50h-15m-22 12h17"
+                      stroke="#ff4b61"
+                    />
+                  </g>
+                </svg>
+              </div>
+              <span class="eyebrow">DISTRICT STREETS. YOUR PERSPECTIVE.</span>
+              <h3>The moments are already marked.</h3>
+              <p>
+                Connect a ride and its footage to jump straight<br />to the
+                things you noticed along the way.
+              </p>
+            </div>
+            <div class="video-tag" id="video-tag">
+              PRIVATE BY DESIGN <span>↗</span>
+            </div>
+          </div>
+          <div id="preview-note" class="preview-note">
+            <span class="dot"></span
+            ><span>Original files stay exactly where you put them.</span>
+          </div>
+          <div id="clip-editor" hidden>
+            <div class="clip-toolbar">
+              <button id="play-clip">▶ Play clip</button
+              ><button id="jump-event" class="quiet">Jump to report</button
+              ><button id="compatible-preview" class="quiet">
+                Build compatible preview</button
+              ><label class="review-toggle"
+                ><input id="reviewed" type="checkbox" /> Reviewed</label
+              >
+            </div>
+            <div class="trim-header">
+              <h3>Fine-tune the moment</h3>
+              <span id="clip-length" class="mono"></span>
+            </div>
+            <div class="trim-controls">
+              <div class="trim-handle">
+                <label for="before"
+                  >Before the report <span>seconds</span></label
+                >
+                <div class="trim-input">
+                  <button
+                    data-trim="before:-5"
+                    aria-label="Shorten beginning by 5 seconds"
+                  >
+                    −</button
+                  ><input
+                    id="before"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value="15"
+                  /><button
+                    data-trim="before:5"
+                    aria-label="Extend beginning by 5 seconds"
+                  >
+                    ＋
+                  </button>
+                </div>
+                <input
+                  id="before-range"
+                  aria-label="Seconds before the report"
+                  type="range"
+                  min="0"
+                  max="90"
+                  step="0.5"
+                  value="15"
+                />
+              </div>
+              <div class="event-anchor">
+                <span>⚑</span><small>REPORT</small>
+              </div>
+              <div class="trim-handle">
+                <label for="after">After the report <span>seconds</span></label>
+                <div class="trim-input">
+                  <button
+                    data-trim="after:-5"
+                    aria-label="Shorten ending by 5 seconds"
+                  >
+                    −</button
+                  ><input
+                    id="after"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value="15"
+                  /><button
+                    data-trim="after:5"
+                    aria-label="Extend ending by 5 seconds"
+                  >
+                    ＋
+                  </button>
+                </div>
+                <input
+                  id="after-range"
+                  aria-label="Seconds after the report"
+                  type="range"
+                  min="0"
+                  max="90"
+                  step="0.5"
+                  value="15"
+                />
+              </div>
+            </div>
+            <div class="clip-footer">
+              <span id="clip-boundaries" class="mono muted"></span>
+              <div class="button-row">
+                <button id="reset-trim" class="quiet">Reset to ±15s</button
+                ><button id="export-clip" class="primary">
+                  Export this clip <span>↗</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="ride-timeline">
+            <div class="timeline-heading">
+              <h3>Recording timeline</h3>
+              <span id="timeline-duration" class="mono">00:00</span>
+            </div>
+            <div id="timeline" class="timeline-track">
+              <span class="timeline-placeholder"
+                >Your video segments and reports will appear here</span
+              >
+            </div>
+            <div class="timeline-legend">
+              <span><i class="legend-dot close"></i>Close call</span
+              ><span><i class="legend-dot blocked"></i>Blocked lane</span
+              ><span><i class="legend-dot custom"></i>Custom event</span
+              ><span class="push-right">Times relative to video start</span>
+            </div>
+          </div>
+        </div>
+      </section>
+      <footer class="app-footer">
+        <span>Made for the moments between A and B.</span
+        ><span
+          >No cloud uploads · Originals stay untouched · You choose what to
+          keep</span
+        >
+      </footer>
+    </main>
+    <div id="notice" class="notice" role="status" hidden></div>
+    <dialog id="dialog">
+      <div class="dialog-heading">
+        <h2 id="dialog-title"></h2>
+        <button id="close-dialog" class="quiet" aria-label="Close dialog">
+          ✕
+        </button>
+      </div>
+      <div id="dialog-body"></div>
+    </dialog>
+    <input
+      id="ride-file"
+      type="file"
+      accept=".json,application/json"
+      hidden
+    /><input
+      id="project-file"
+      type="file"
+      accept=".json,application/json"
+      hidden
+    /><input
+      id="video-files"
+      type="file"
+      accept="video/*,.mov,.mkv,.avi"
+      multiple
+      hidden
+    />
+  </body>
+</html>
