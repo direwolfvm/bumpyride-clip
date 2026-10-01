@@ -4,34 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#ffffff" />
-    <title>BumpyRide Clip — Your ride, in focus</title>
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23cf233b'/%3E%3Ctext x='10' y='31' font-family='sans-serif' font-size='32' fill='%23ffffff'%3Eb%3C/text%3E%3C/svg%3E"
-    />
+    <title>BumpyRide Clip</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2214%22%20fill%3D%22%23102439%22%2F%3E%3Crect%20x%3D%2215%22%20y%3D%2213%22%20width%3D%2234%22%20height%3D%2230%22%20rx%3D%224%22%20fill%3D%22none%22%20stroke%3D%22white%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M20%2018h3m6%200h3m6%200h3m-21%2020h3m6%200h3m6%200h3%22%20stroke%3D%22white%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22m28%2023%2010%206-10%206z%22%20fill%3D%22white%22%2F%3E%3Cpath%20d%3D%22M10%2051h11l4-5%205%2011%205-13%205%207h14%22%20fill%3D%22none%22%20stroke%3D%22%234ce3a3%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E" />
     <link rel="stylesheet" href="/style.css" />
     <script type="module" src="/app.js"></script>
   </head>
   <body>
     <header class="app-header">
       <a class="brand" href="/" aria-label="BumpyRide Clip home"
-        ><span class="brand-icon" aria-hidden="true"
-          ><svg
-            viewBox="0 0 40 40"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="10" cy="27" r="7" />
-            <circle cx="31" cy="27" r="7" />
-            <path
-              d="M10 27l7-14 8 14H10l10-9h8m3 9-5-17h-5m-8 3h7"
-            /></svg></span
+        ><span class="brand-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#102439"/><rect x="15" y="13" width="34" height="30" rx="4" fill="none" stroke="white" stroke-width="2.5"/><path d="M20 18h3m6 0h3m6 0h3m-21 20h3m6 0h3m6 0h3" stroke="white" stroke-width="2.5"/><path d="m28 23 10 6-10 6z" fill="white"/><path d="M10 51h11l4-5 5 11 5-13 5 7h14" fill="none" stroke="#4ce3a3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span
         ><span>BumpyRide <strong>Clip</strong></span></a
       >
-      <span class="local-badge"><span class="dot"></span> LOCAL WORKSPACE</span>
+      <span class="local-badge"><span class="dot"></span> LOCAL</span>
       <div class="header-actions">
         <button id="open-project" class="quiet">Open project</button
         ><button id="save-project">Save project <span>↗</span></button
@@ -41,16 +25,10 @@
     <main>
       <div class="project-heading">
         <div>
-          <div class="eyebrow">
-            <span class="district-flag" aria-hidden="true"
-              ><span>★★★</span></span
-            >
-            THE DISTRICT / RIDE REVIEW
-          </div>
-          <h1 id="project-title">Every moment worth keeping.</h1>
+          <div class="eyebrow">BumpyRide companion</div>
+          <h1 id="project-title">Ride clips</h1>
           <p id="project-subtitle">
-            Turn your ride reports into clips. Everything stays on your
-            computer.
+            Review video for the things you track in BumpyRide.
           </p>
         </div>
         <span class="project-state" id="project-state"
@@ -65,12 +43,12 @@
             <span class="small-badge" id="ride-badge">JSON</span>
           </div>
           <div id="ride-summary">
-            <p class="setup-copy">Your reports are the starting point.</p>
+            <p class="setup-copy">Choose a BumpyRide ride.</p>
             <p class="muted">Open a ride from BumpyRide’s iCloud Documents.</p>
           </div>
           <div class="button-row">
             <button id="open-ride">＋ Open ride JSON</button
-            ><button id="cloud-rides" class="quiet">Browse iCloud</button>
+            ><button id="cloud-rides" class="quiet">Choose ride</button>
           </div>
         </div>
         <div class="setup-card">
@@ -80,7 +58,7 @@
             <span class="small-badge" id="video-badge">0 FILES</span>
           </div>
           <div id="source-summary">
-            <p class="setup-copy">One ride. As many files as it takes.</p>
+            <p class="setup-copy">Add the videos from your ride.</p>
             <p class="muted">
               Link originals in place, including files over 4 GB.
             </p>
@@ -97,7 +75,7 @@
             <span class="small-badge" id="sync-badge">NOT SET</span>
           </div>
           <div id="sync-summary">
-            <p class="setup-copy">A reliable start, from your ride.</p>
+            <p class="setup-copy">Match reports to the video.</p>
             <p class="muted">
               A Video Sync report sets the first video’s start.
             </p>
@@ -126,7 +104,7 @@
           <div id="event-list" class="event-list">
             <div class="empty-list">
               <span class="empty-symbol">⚑</span>
-              <h3>Your reports, lined up.</h3>
+              <h3>No ride loaded.</h3>
               <p>
                 Close calls, blocked lanes, and custom events will appear here.
               </p>
@@ -147,7 +125,7 @@
           <div class="editor-heading">
             <div>
               <span class="eyebrow" id="active-kicker">CLIP PREVIEW</span>
-              <h2 id="active-title">Find the story in your ride.</h2>
+              <h2 id="active-title">Clip preview</h2>
             </div>
             <span id="active-time" class="mono"></span>
           </div>
@@ -160,54 +138,21 @@
               hidden
             ></video>
             <div id="video-empty" class="video-empty">
-              <div class="road-art" aria-hidden="true">
-                <svg
-                  viewBox="0 0 360 140"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <g
-                    stroke="#839cb8"
-                    stroke-width="1.5"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M14 91h332M57 90l4-64 5-12 5 12 4 64M61 26h10" />
-                    <path
-                      d="M217 91V72h18V60h10V49h44v11h10v12h18v19M245 49c0-20 44-20 44 0M252 35c0-13 30-13 30 0M267 25V14m-3 0h6M242 61h50M230 73h74"
-                    />
-                    <path
-                      d="M248 65v19m12-19v19m13-19v19m12-19v19M226 81v10m82-10v10"
-                    />
-                  </g>
-                  <path
-                    d="M24 113h312M37 124h40m18 0h40m18 0h40m18 0h40m18 0h40"
-                    stroke="#577592"
-                    stroke-width="1.5"
-                  />
-                  <g
-                    stroke="#ffffff"
-                    stroke-width="3"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <circle cx="132" cy="91" r="20" />
-                    <circle cx="198" cy="91" r="20" />
-                    <path
-                      d="M132 91l22-38 24 38h-46l31-27h25m10 27-16-50h-15m-22 12h17"
-                      stroke="#ff4b61"
-                    />
-                  </g>
-                </svg>
-              </div>
-              <span class="eyebrow">DISTRICT STREETS. YOUR PERSPECTIVE.</span>
-              <h3>The moments are already marked.</h3>
+              <div class="clip-art" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#102439"/><rect x="15" y="13" width="34" height="30" rx="4" fill="none" stroke="white" stroke-width="2.5"/><path d="M20 18h3m6 0h3m6 0h3m-21 20h3m6 0h3m6 0h3" stroke="white" stroke-width="2.5"/><path d="m28 23 10 6-10 6z" fill="white"/><path d="M10 51h11l4-5 5 11 5-13 5 7h14" fill="none" stroke="#4ce3a3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <h3>Open a ride to get started.</h3>
               <p>
-                Connect a ride and its footage to jump straight<br />to the
-                things you noticed along the way.
+                Add your BumpyRide ride file and videos,<br />then choose an event to review.
               </p>
             </div>
             <div class="video-tag" id="video-tag">
-              PRIVATE BY DESIGN <span>↗</span>
+              Local video preview
+            </div>
+          </div>
+          <div id="event-cue" class="event-cue" hidden>
+            <div class="event-cue-heading"><span id="event-cue-label"></span><strong id="event-cue-status"></strong></div>
+            <div class="clip-cue-track" aria-label="Event position and playback position in this clip">
+              <span id="clip-event-marker" class="clip-event-marker" title="Recorded event"></span>
+              <span id="clip-playhead" class="clip-playhead" title="Playback position"></span>
             </div>
           </div>
           <div id="preview-note" class="preview-note">
@@ -224,8 +169,22 @@
                 ><input id="reviewed" type="checkbox" /> Reviewed</label
               >
             </div>
+            <div class="calibration-panel">
+              <label class="review-toggle"><input id="calibrate" type="checkbox" /> Calibrate video sync</label>
+              <div id="calibration-controls" hidden>
+                <p>Adjust all reports in this ride while watching this clip. Pause at the matching moment to align the event to that frame.</p>
+                <div class="calibration-actions">
+                  <button id="event-earlier">Event 0.1s earlier</button>
+                  <button id="event-later">Event 0.1s later</button>
+                  <button id="match-frame">Match event to paused frame</button>
+                </div>
+                <label>Start correction <input id="calibration-offset" type="number" step="0.1" value="0" /> seconds</label>
+                <button id="reset-calibration" class="quiet">Reset correction</button>
+                <small>Positive correction means the video started later than the sync reference. Changes apply to the entire ride. Black line = playback; colored line = event.</small>
+              </div>
+            </div>
             <div class="trim-header">
-              <h3>Fine-tune the moment</h3>
+              <h3>Clip timing</h3>
               <span id="clip-length" class="mono"></span>
             </div>
             <div class="trim-controls">
@@ -278,7 +237,7 @@
                     type="number"
                     min="0"
                     step="0.1"
-                    value="15"
+                    value="5"
                   /><button
                     data-trim="after:5"
                     aria-label="Extend ending by 5 seconds"
@@ -293,14 +252,15 @@
                   min="0"
                   max="90"
                   step="0.5"
-                  value="15"
+                  value="5"
                 />
               </div>
             </div>
+            <button id="apply-selected-timing" class="bulk-timing" hidden>Apply timing to selected clips</button>
             <div class="clip-footer">
               <span id="clip-boundaries" class="mono muted"></span>
               <div class="button-row">
-                <button id="reset-trim" class="quiet">Reset to ±15s</button
+                <button id="reset-trim" class="quiet">Reset to 15s / 5s</button
                 ><button id="export-clip" class="primary">
                   Export this clip <span>↗</span>
                 </button>
@@ -327,7 +287,7 @@
         </div>
       </section>
       <footer class="app-footer">
-        <span>Made for the moments between A and B.</span
+        <span>A companion to BumpyRide.</span
         ><span
           >No cloud uploads · Originals stay untouched · You choose what to
           keep</span
@@ -347,12 +307,12 @@
     <input
       id="ride-file"
       type="file"
-      accept=".json,application/json"
+      accept=".bumpyclip,.json,application/json"
       hidden
     /><input
       id="project-file"
       type="file"
-      accept=".json,application/json"
+      accept=".bumpyclip,.json,application/json"
       hidden
     /><input
       id="video-files"

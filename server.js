@@ -72,6 +72,29 @@ async function readRide(file) {
   if (info.size > 100_000_000) throw fail("Ride JSON is larger than 100 MB.");
   return parseRide(JSON.parse(await fs.readFile(file, "utf8")));
 }
+// Read sequentially so large ride traces do not multiply memory use while browsing.
+export async function listRides(directory) {
+  let names;
+  try { names = await fs.readdir(directory); }
+  catch { throw fail("Rides folder unavailable. Open a ride JSON directly, or set BUMPYRIDE_RIDES_DIR to your downloaded rides folder.", 404); }
+  const rides = [];
+  for (const name of names.filter((name) => /\.json$/i.test(name))) {
+    const file = path.join(directory, name);
+    try {
+      if (!(await fs.stat(file)).isFile()) continue;
+      const ride = await readRide(file);
+      rides.push({ name, path: file, title: ride.title, startedAt: ride.startedAt,
+        duration: timestamp(ride.endedAt) - timestamp(ride.startedAt),
+        reports: ride.events.length, syncs: ride.syncs.length });
+    } catch {
+      rides.push({ name, path: file, title: name,
+        issue: "Couldn’t read this ride. Check that it is valid ride JSON and downloaded locally, then try again." });
+    }
+  }
+  return rides.sort((a, b) =>
+    (b.startedAt ? timestamp(b.startedAt) : -Infinity) - (a.startedAt ? timestamp(a.startedAt) : -Infinity)
+      || a.name.localeCompare(b.name));
+}
 async function register(session, file, uploaded = false) {
   file = await localPath(file, videoExtensions);
   const existing = [...session.sources.values()].find((s) => s.path === file);
@@ -236,33 +259,7 @@ async function route(req, res) {
     if (pathname === "/api/ride" && req.method === "POST")
       return json(res, await readRide((await body(req)).path));
     if (pathname === "/api/rides" && req.method === "GET") {
-      let names;
-      try {
-        names = await fs.readdir(cloudDirectory);
-      } catch {
-        throw fail(
-          "iCloud rides folder not found. Open a ride JSON from Finder instead.",
-          404,
-        );
-      }
-      const rides = await Promise.all(
-        names
-          .filter((n) => /^[\da-f-]{36}\.json$/i.test(n))
-          .map(async (name) => {
-            const file = path.join(cloudDirectory, name),
-              info = await fs.stat(file);
-            return {
-              name,
-              path: file,
-              modifiedAt: info.mtime.toISOString(),
-              size: info.size,
-            };
-          }),
-      );
-      return json(
-        res,
-        rides.sort((a, b) => b.modifiedAt.localeCompare(a.modifiedAt)),
-      );
+      return json(res, await listRides(cloudDirectory));
     }
     if (pathname === "/api/sources" && req.method === "POST") {
       const { paths } = await body(req);

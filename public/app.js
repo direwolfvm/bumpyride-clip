@@ -6,6 +6,9 @@ import {
   timestamp,
   validateProject,
   rideForProject,
+  calibratedStart,
+  applySelectedTiming,
+  eventCue,
 } from "./domain.js";
 
 const $ = (id) => document.getElementById(id);
@@ -54,7 +57,7 @@ let isDirty = false,
   playbackGeneration = 0;
 const video = $("video");
 const editFor = (id) =>
-  (edits[id] ||= { before: 15, after: 15, selected: false, reviewed: false });
+  (edits[id] ||= { before: 15, after: 5, selected: false, reviewed: false });
 const activeEvent = () => ride?.events.find((e) => e.id === activeId);
 const ready = () =>
   Boolean(ride && sources.length && videoStart && !pendingSources.length);
@@ -169,15 +172,15 @@ function renderAll() {
   document.body.classList.toggle("has-ride", Boolean(ride));
   $("project-title").textContent = ride
     ? ride.title
-    : "Every moment worth keeping.";
+    : "Ride clips";
   $("project-subtitle").textContent = ride
     ? `${dateTime(ride.startedAt)} · ${ride.events.length} reports · ${formatTime(timestamp(ride.endedAt) - timestamp(ride.startedAt))} ride`
-    : "Turn your ride reports into clips. Everything stays on your computer.";
+    : "Review video for the things you track in BumpyRide.";
   $("save-project").disabled = !ride;
   $("ride-badge").textContent = ride ? `${ride.events.length} REPORTS` : "JSON";
   $("ride-summary").innerHTML = ride
     ? `<p class="setup-copy">${escape(ride.title)}</p><p class="muted">${ride.syncs.length} video sync ${ride.syncs.length === 1 ? "marker" : "markers"} · Hard brakes excluded</p>`
-    : '<p class="setup-copy">Your reports are the starting point.</p><p class="muted">Open a ride from BumpyRide’s iCloud Documents.</p>';
+    : '<p class="setup-copy">Choose a BumpyRide ride.</p><p class="muted">Open a ride from BumpyRide’s iCloud Documents.</p>';
   $("video-badge").textContent =
     `${sources.length} FILE${sources.length === 1 ? "" : "S"}`;
   const total = segmentsFor(sources).at(-1)?.end || 0;
@@ -185,7 +188,7 @@ function renderAll() {
     ? `<p class="setup-copy">${sources.length} linked ${sources.length === 1 ? "video" : "videos"} · ${formatTime(total)} of recording</p><p class="muted">${humanSize(sources.reduce((sum, s) => sum + s.size, 0))} · ${sources.some((s) => s.uploaded) ? "Includes temporary browser uploads" : "Original files linked in place"}</p>`
     : pendingSources.length
       ? `<p class="setup-copy">Relink ${pendingSources.length} original video files</p><p class="muted">Your saved edits are ready. Add the matching videos.</p>`
-      : '<p class="setup-copy">One ride. As many files as it takes.</p><p class="muted">Link originals in place, including files over 4 GB.</p>';
+      : '<p class="setup-copy">Add the videos from your ride.</p><p class="muted">Link originals in place, including files over 4 GB.</p>';
   $("sync-badge").textContent = videoStart
     ? syncId
       ? "SYNCED"
@@ -193,7 +196,7 @@ function renderAll() {
     : "NOT SET";
   $("sync-summary").innerHTML = videoStart
     ? `<p class="setup-copy">Video starts ${escape(clockTime(videoStart))}</p><p class="muted">${syncId ? "From Video Sync report" : "Manually aligned"}${offset ? ` · ${offset > 0 ? "+" : ""}${offset}s correction` : ""}</p>`
-    : `<p class="setup-copy">${ride ? "Set the first video’s real start time." : "A reliable start, from your ride."}</p><p class="muted">${ride && !ride.syncs.length ? "No Video Sync report in this ride. Set it manually." : ride?.syncs.length > 1 ? "Choose which Video Sync report matches this footage." : "A Video Sync report sets the first video’s start."}</p>`;
+    : `<p class="setup-copy">${ride ? "Set the first video’s real start time." : "Match reports to the video."}</p><p class="muted">${ride && !ride.syncs.length ? "No Video Sync report in this ride. Set it manually." : ride?.syncs.length > 1 ? "Choose which Video Sync report matches this footage." : "A Video Sync report sets the first video’s start."}</p>`;
   renderEvents();
   renderTimeline();
   renderEditor();
@@ -216,7 +219,7 @@ function renderEvents() {
   const events = filteredEvents();
   if (!ride)
     $("event-list").innerHTML =
-      '<div class="empty-list"><span class="empty-symbol">⚑</span><h3>Your reports, lined up.</h3><p>Close calls, blocked lanes, and custom events will appear here.</p><small>Hard brakes are left out.</small></div>';
+      '<div class="empty-list"><span class="empty-symbol">⚑</span><h3>No ride loaded.</h3><p>Close calls, blocked lanes, and custom events will appear here.</p><small>Hard brakes are left out.</small></div>';
   else if (!events.length)
     $("event-list").innerHTML =
       '<div class="empty-hint">No events in this view. Only close calls, blocked lanes, and custom reports become clips.</div>';
@@ -259,6 +262,9 @@ function renderSelection() {
     ? `${formatTime(clips.reduce((n, c) => n + (c?.duration || 0), 0))} · In report order${valid ? "" : " · Check footage coverage"}`
     : "Build a reel from your ride";
   $("export-reel").disabled = !selected.length || !valid || busy;
+  $("apply-selected-timing").hidden = selected.length < 2;
+  $("apply-selected-timing").textContent = `Apply timing to ${selected.length} selected clips`;
+  $("apply-selected-timing").disabled = !activeId || busy;
 }
 function renderTimeline() {
   const segments = segmentsFor(sources),
@@ -292,12 +298,19 @@ function renderTimeline() {
 function renderEditor() {
   const e = activeEvent(),
     c = activeClip();
-  $("active-title").textContent = e ? e.label : "Find the story in your ride.";
+  $("active-title").textContent = e ? e.label : "Clip preview";
   $("active-kicker").textContent = e
     ? `REPORT ${String(ride.events.indexOf(e) + 1).padStart(2, "0")} / ${String(ride.events.length).padStart(2, "0")}`
     : "CLIP PREVIEW";
   $("active-time").textContent = e ? clockTime(e.timestamp) : "";
   $("clip-editor").hidden = !e;
+  $("event-cue").hidden = !c?.available;
+  $("calibrate").disabled = !c?.available || busy;
+  $("calibration-offset").value = offset;
+  $("calibration-controls").hidden = !$("calibrate").checked || !c?.available;
+  for (const id of ["calibration-offset", "event-earlier", "event-later", "match-frame", "reset-calibration"])
+    $(id).disabled = !c?.available || busy;
+  updateEventCue();
   if (!e) {
     clearVideo();
     return;
@@ -312,7 +325,7 @@ function renderEditor() {
   $("reviewed").checked = edit.reviewed;
   $("clip-length").textContent = c
     ? `${c.duration.toFixed(1)}s clip`
-    : "30s default";
+    : "20s default";
   $("clip-boundaries").textContent = c?.available
     ? `${formatTime(c.start)} → ${formatTime(c.end)}${c.parts.length > 1 ? " · Spans files" : ""}`
     : "Connect footage and set the alignment";
@@ -394,6 +407,7 @@ function seekTimeline(time, autoplay = false) {
       Math.min(segment.duration - 0.01, time - segment.start),
     );
     loadingVideo = false;
+    updateEventCue();
     if (autoplay)
       video.play().catch(() => {
         isPlayingClip = false;
@@ -426,6 +440,7 @@ video.addEventListener("play", () => {
     seekTimeline(clip.start, true);
 });
 video.addEventListener("timeupdate", () => {
+  updateEventCue();
   if (loadingVideo || !isPlayingClip || playbackMode !== "source") return;
   const c = activeClip(),
     s = segmentsFor(sources).find((s) => s.id === currentSourceId);
@@ -462,9 +477,58 @@ $("jump-event").onclick = () => {
     seekTimeline(c.offset);
   }
 };
+function recordingPosition() {
+  if (loadingVideo || video.hidden || !video.readyState) return null;
+  if (playbackMode === "preview") return previewKey === clipKey() ? activeClip()?.start + video.currentTime : null;
+  const segment = segmentsFor(sources).find((s) => s.id === currentSourceId);
+  return segment ? segment.start + video.currentTime : null;
+}
+function updateEventCue() {
+  const clip = activeClip(), position = recordingPosition();
+  if (!clip?.available) return;
+  const cue = eventCue(clip, position ?? clip.start);
+  $("event-cue-label").textContent = `⚑ Event recorded at ${cue.eventTime.toFixed(1)}s in this clip`;
+  $("event-cue-status").textContent = position == null ? "Loading preview…" : cue.atEvent ? "EVENT RECORDED" : `${Math.abs(cue.delta).toFixed(1)}s ${cue.delta < 0 ? "before" : "after"} event`;
+  $("event-cue").classList.toggle("at-event", position != null && cue.atEvent);
+  $("clip-event-marker").style.left = `${cue.eventFraction * 100}%`;
+  $("clip-playhead").style.left = `${cue.playheadFraction * 100}%`;
+  $("match-frame").disabled = busy || position == null || !video.paused;
+}
+for (const name of ["seeked", "loadedmetadata", "pause", "play", "emptied"])
+  video.addEventListener(name, updateEventCue);
+$("calibrate").onchange = () => renderEditor();
+function calibrate(adjustment) {
+  if (busy || !activeClip()?.available) return;
+  const position = recordingPosition();
+  const corrected = calibratedStart(videoStart, offset, adjustment);
+  video.pause(); isPlayingClip = false;
+  videoStart = corrected; offset = adjustment;
+  invalidatePreview(); remember(); renderAll();
+  const clip = activeClip();
+  if (clip?.available) seekTimeline(Math.max(clip.start, Math.min(clip.end - 0.01, position ?? clip.start)));
+  // Compatible previews are cached cuts; rebuild after alignment changes if the source cannot play.
+}
+$("calibration-offset").onchange = safely((event) => calibrate(Number(event.target.value)));
+$("event-earlier").onclick = safely(() => calibrate(Math.round((offset + 0.1) * 1000) / 1000));
+$("event-later").onclick = safely(() => calibrate(Math.round((offset - 0.1) * 1000) / 1000));
+$("reset-calibration").onclick = safely(() => calibrate(0));
+$("match-frame").onclick = safely(() => {
+  const position = recordingPosition(), clip = activeClip();
+  if (position == null || !clip?.available || !video.paused) return;
+  calibrate(Math.round((offset + clip.offset - position) * 1000) / 1000);
+});
+$("apply-selected-timing").onclick = safely(() => {
+  if (busy || !activeId || selectedEvents().length < 2) return;
+  const edit = editFor(activeId), count = selectedEvents().length;
+  edits = applySelectedTiming(ride.events, edits, edit.before, edit.after);
+  invalidatePreview(); remember(); renderEvents(); renderEditor(); renderTimeline();
+  video.pause(); isPlayingClip = false;
+  if (activeClip()?.available) seekTimeline(activeClip().start);
+  notice(`Applied ${edit.before}s before / ${edit.after}s after to ${count} selected clips.`);
+});
 function changeTrim(side, value) {
   const e = activeEvent();
-  if (!e) return;
+  if (!e || busy) return;
   const number = Number(value),
     edit = editFor(e.id),
     other = side === "before" ? "after" : "before";
@@ -499,7 +563,7 @@ document.querySelectorAll("[data-trim]").forEach(
 $("reset-trim").onclick = () => {
   if (!activeId) return;
   editFor(activeId).before = 15;
-  changeTrim("after", 15);
+  changeTrim("after", 5);
 };
 $("reviewed").onchange = (e) => {
   editFor(activeId).reviewed = e.target.checked;
@@ -563,41 +627,40 @@ $("ride-file").onchange = safely(async (e) => {
   await replaceRide(parseRide(JSON.parse(await file.text())));
 });
 $("cloud-rides").onclick = safely(async () => {
-  dialog("Rides in iCloud", '<p class="dialog-copy">Finding ride files…</p>');
+  dialog("Choose a ride", '<p class="dialog-copy">Reading ride details… Cloud-only files may need downloading first.</p>');
   const files = await api("/api/rides");
   dialog(
-    "Rides in iCloud",
-    '<p class="dialog-copy">Files are listed by their last modified date, which may differ from the ride date. Choose a file to read its reports. Files stored only in iCloud may need a moment to download.</p><label class="form-field">Filter by modified date<input id="ride-date" type="date"></label><div id="cloud-list" class="cloud-list"></div>',
+    "Choose a ride",
+    '<p class="dialog-copy">Newest rides first, using the date recorded by BumpyRide. Hard brakes are excluded from report counts.</p><label class="form-field">Search rides<input id="ride-search" type="search" placeholder="Ride title or filename"></label><label class="form-field">Ride date<input id="ride-date" type="date"></label><label class="check-row"><input id="rides-with-reports" type="checkbox"> With reports only</label><div id="cloud-list" class="cloud-list"></div><p class="dialog-copy">To browse another folder, set BUMPYRIDE_RIDES_DIR before starting the server. You can also open an individual ride JSON from the main screen.</p>',
   );
   function showFiles() {
     const date = $("ride-date").value,
-      visible = files.filter(
-        (f) =>
-          !date || new Date(f.modifiedAt).toLocaleDateString("en-CA") === date,
-      );
+      query = $("ride-search").value.trim().toLocaleLowerCase(),
+      visible = files.filter((f) =>
+        (!date || (f.startedAt && new Date(f.startedAt).toLocaleDateString("en-CA") === date)) &&
+        (!query || `${f.title} ${f.name}`.toLocaleLowerCase().includes(query)) &&
+        (!$("rides-with-reports").checked || f.reports > 0));
     $("cloud-list").innerHTML = visible.length
-      ? visible
-          .map(
-            (f, i) =>
-              `<button class="cloud-row" data-cloud="${i}"><strong>${escape(dateTime(f.modifiedAt))}</strong><small>${escape(f.name)} · ${(f.size / 1024 ** 2).toFixed(1)} MB</small></button>`,
-          )
-          .join("")
-      : '<p class="dialog-copy">No ride files match this date.</p>';
-    document.querySelectorAll("[data-cloud]").forEach(
-      (b) =>
-        (b.onclick = safely(async () => {
-          b.disabled = true;
-          b.textContent = "Reading ride…";
-          const next = await api("/api/ride", {
-            path: visible[Number(b.dataset.cloud)].path,
-          });
+      ? visible.map((f, i) =>
+          `<button class="cloud-row" data-cloud="${i}" ${f.issue ? "disabled" : ""}><strong>${escape(f.title || "Untitled ride")}</strong><small>${f.issue ? escape(f.issue) : `${escape(dateTime(f.startedAt))} · ${formatTime(f.duration)} · ${f.reports} reports · ${f.syncs ? `${f.syncs} video sync` : "No video sync"}`}</small><small>${escape(f.name)}</small></button>`,
+        ).join("")
+      : '<p class="dialog-copy">No rides match. Try another search or turn off the filters.</p>';
+    document.querySelectorAll("[data-cloud]").forEach((b) =>
+      (b.onclick = safely(async () => {
+        b.disabled = true;
+        b.textContent = "Reading ride…";
+        try {
+          const next = await api("/api/ride", { path: visible[Number(b.dataset.cloud)].path });
           closeDialog();
           await replaceRide(next);
-        })),
+        } catch (error) { showFiles(); throw error; }
+      })),
     );
   }
   showFiles();
+  $("ride-search").oninput = showFiles;
   $("ride-date").onchange = showFiles;
+  $("rides-with-reports").onchange = showFiles;
 });
 function matchesSource(expected, actual) {
   return (

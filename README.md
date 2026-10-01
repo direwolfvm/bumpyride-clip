@@ -1,89 +1,124 @@
 # BumpyRide Clip
 
-A local browser app for turning BumpyRide reports into ride-video clips. It reads ride JSON from iCloud Documents, links large camera files in place, and uses a **Video Sync report** as the video’s real start time. No ride data or footage is sent to an external service.
+A companion to BumpyRide for documenting what you track along the way. Choose a ride, link your camera files, and turn close calls, blocked lanes, and custom reports into clips. All processing stays on your computer.
 
-## Run
+## Get the app
 
-Requires Node.js 22 or newer. On first install, npm downloads platform-specific FFmpeg and FFprobe binaries; subsequent use is offline.
+| Platform | How to run |
+| --- | --- |
+| **macOS 26.2+** (Apple silicon or Intel) | Download the signed, notarized DMG from [GitHub Releases](https://github.com/direwolfvm/bumpyride-clip/releases/latest), open it, and drag BumpyRide Clip into Applications. |
+| **Windows and Linux** | Run the **local Node browser app** from this repository using the steps below. No native Windows or Linux installer is provided. |
+| Other supported macOS versions | Use the Node browser app, or build the native app on macOS 26.2+. |
+
+### Windows and Linux: local Node app
+
+Install **Node.js 22 or newer**, download and extract this repository's source ZIP (or clone it), and open a terminal in the repository folder:
 
 ```sh
 npm install
 npm start
 ```
 
-Open **http://127.0.0.1:4317**. Keep the terminal running while editing. `Ctrl+C` stops the server and removes its temporary videos. `npm run dev` restarts the server on source changes (reopen the project and relink videos after a restart).
+Open **http://127.0.0.1:4317** in your browser. Keep the terminal running while editing; use **Ctrl+C** to stop it. The first install downloads FFmpeg and FFprobe for your platform. Later editing and exports run locally, without an account or server outside your computer. If your platform lacks a bundled binary, set `FFMPEG_PATH` and `FFPROBE_PATH` to installed executables.
 
-If your npm policy blocks dependency install scripts, allow the install scripts for `ffmpeg-static` and your platform’s `@ffprobe-installer/*` package. You can also point `FFMPEG_PATH` and `FFPROBE_PATH` at existing binaries.
+Use **Open ride JSON** for a downloaded BumpyRide ride. To browse a whole folder with **Choose ride**, set its absolute path before `npm start`:
 
-## Workflow
-
-1. **Open a ride JSON**, or use **Browse iCloud**. The default Mac folder is `~/Library/Mobile Documents/iCloud~com~herbertindustries~BumpyRide/Documents/Rides/`. iCloud browsing lists file modification dates, not ride dates; open a file to see its actual title and date. A cloud-only file may need downloading in Finder first.
-2. **Add videos**. On macOS this opens a native picker and reads originals in place, including files larger than 4 GB. **Manage files** supports absolute local paths on any platform and the repository’s sample videos. Browser upload is an alternative: it streams each file to a temporary local copy (20 GB per file), without buffering the entire file in memory.
-3. **Check alignment**. One Video Sync marker is selected automatically; multiple markers require choosing one. If none exists, explicitly enter the first video’s real start time in your computer’s timezone. The camera’s embedded timestamps and filename dates are never used. A positive correction means the video started later than the reference time.
-4. **Review reports**. Each begins with 15 seconds before and after the report. Change the numbers, sliders, or ±5-second buttons to trim or extend either handle. Clips can cross camera-file boundaries. Review checkboxes and selection checkboxes are independent.
-5. **Export** one clip, or select reports and **Export reel**. Reels follow chronological report order; overlapping report clips retain their separate context. Exports use H.264/AAC MP4, at the first selected source’s dimensions and frame rate. Other pieces are scaled and letterboxed to match; files without audio receive silence. Accurate cuts are re-encoded, so rendering takes time. Use Download or the Mac **Save to a folder** dialog. Existing files are never overwritten.
-6. **Save project** to keep a small `.bumpyclip.json` file. It contains report timestamps, sync settings, clip handles, review/selection state, and source fingerprints. It contains no video data, absolute source paths, or ride GPS trace. Reopen it and relink the originals in any selection order; the saved sequence is restored. File name, size, duration, and modification time must match.
-7. **Finish session** removes temporary uploads, previews, and rendered exports, and clears the browser’s project autosave. Save/download anything you want to keep first. Original linked files and downloaded exports are never deleted.
-
-Project metadata is also autosaved in this browser. Reloading offers to restore it; original videos still need relinking. Multiple tabs are independent editing sessions but share the latest browser autosave, so use project files to keep separate projects.
-
-## Alignment and coverage
-
-The shared timeline uses seconds relative to frame zero of the first video:
-
-```text
-videoStart = chosen Video Sync timestamp + correctionSeconds
-eventPosition = reportTimestamp - videoStart
-clip = [eventPosition - beforeSeconds, eventPosition + afterSeconds]
-nextFileStart = previousFileStart + previousFileDuration + gapBeforeNextFile
+```powershell
+# Windows PowerShell
+$env:BUMPYRIDE_RIDES_DIR = 'C:\Users\you\Documents\BumpyRide\Rides'
+npm start
 ```
-
-Files are sequential by default. Check their order in **Manage files**, and enter a gap if recording actually stopped. The app does not infer real-world gaps from camera timestamps. It clamps handles at the first/last footage edge and labels shortened clips. An event outside the recording, or a clip crossing a known gap, cannot be exported until the alignment or handles are corrected.
-
-Native browser playback is used without generating duplicate videos. If a codec/container cannot play in your browser, **Build compatible preview** creates only the selected clip at up to 960 pixels. The exported video still uses the original sources. Playback may briefly pause when switching source files; an exported clip is joined into one MP4. Precision is limited by the source’s frame rate and the precision of the ride’s timestamps.
-
-## BumpyRide data contract
-
-Derived from the sibling `bumpy-ride` repository:
-
-- `BumpyRide/BumpyRide/Models.swift`: `Ride`, `CloseCall`, and `OtherEvent`.
-- `BumpyRide/BumpyRide/RideStore.swift`: one `<UUID>.json` file per ride, ISO-8601 date encoding.
-- `BumpyRide/BumpyRide/CloudStorage.swift`: iCloud `Documents/Rides/` storage.
-
-`closeCallEvents` contains close calls with `id`, `timestamp`, and optional `category`. `otherEvents` contains `id`, `timestamp`, `kind`, and `isCustom`; the built-in blocked-lane kind is `blocked-lane`, while custom labels are stored verbatim. Optional/missing event arrays are supported. `brakeEvents` and `points` are ignored. Invalid individual reports are skipped with a visible warning.
-
-**Video Sync is a custom event**, confirmed in local ride data. Labels are matched case-insensitively after removing spaces, hyphens, and underscores. Sync markers align footage and are not exported as report clips.
-
-The two September 2 sample videos total **1,767 seconds (29:27)**. The two September 2 ride JSON files inspected during development had blocked-lane and Scooter events but **no Video Sync marker**. Their camera dates cannot establish a trustworthy match; provide a known real start time before making real clips from them. No personal ride JSON is bundled or committed.
-
-## Storage and local service
-
-- The server binds only to `127.0.0.1`, validates host/origin, and requires a random per-session token for file/media operations.
-- Large source videos are served with byte ranges for seeking. Linking does not copy them.
-- Uploads and generated media live under the OS temporary directory in `bumpyride-clip/<process>-<session>/`.
-- Finished render intermediates are removed. Only the most recent compatible preview is retained per session.
-- Finish session or normal server shutdown cancels processing and deletes session temp directories.
-- After a browser stops sending heartbeats, an idle session expires after about 2 minutes (plus up to 30 seconds for the cleanup sweep). Background-tab throttling can also expire a session; save the project before leaving it unattended. Active exports are allowed to finish before expiry.
-- After a crash or forced kill, the next server start removes this app’s directories whose owning process is no longer running. Files under an unrelated process or directory are not touched.
-- Processing is serial per browser session. There is no cloud account, external font, analytics, database, or frontend build step.
-
-Configuration:
-
-| Variable              | Default                                |
-| --------------------- | -------------------------------------- |
-| `PORT`                | `4317`                                 |
-| `BUMPYRIDE_RIDES_DIR` | Mac iCloud BumpyRide `Documents/Rides` |
-| `FFMPEG_PATH`         | npm-provided FFmpeg                    |
-| `FFPROBE_PATH`        | npm-provided FFprobe                   |
-
-## Development and validation
 
 ```sh
-npm test
+# Linux (or macOS)
+BUMPYRIDE_RIDES_DIR="$HOME/Documents/BumpyRide/Rides" npm start
 ```
 
-Node’s built-in test runner covers the ride parser, custom labels, sync math, absent/multiple syncs, segment boundaries and gaps, clip validation, project round trips, byte ranges, local API access checks, and an end-to-end FFmpeg export. The integration test generates tiny videos with different dimensions and audio layouts, verifies frame colors on each side of a split and output duration, builds a reel, streams an upload, cancels a job, and checks cleanup and unchanged originals.
+On Windows and Linux, use **Manage files → Link paths** to read the original videos in place. Browser upload also works, but creates temporary local copies. The Mac-only native file picker and default iCloud folder are optional conveniences. See [the browser app guide](docs/browser-app.md) for setup, exports, storage, and troubleshooting.
 
-`public/domain.js` contains the shared pure timeline/project logic. `public/app.js` and `public/style.css` implement the UI. `server.js` handles local file access and lifecycle; `lib/media.js` runs FFprobe and FFmpeg without shell interpolation.
 
-The only runtime npm dependencies provide the two media binaries. FFmpeg is independently licensed; see the bundled binary/package notices and [FFmpeg licensing](https://ffmpeg.org/legal.html) before redistributing a packaged application.
+## Run the macOS app
+
+Open `BumpyRide Clip/BumpyRide Clip.xcodeproj` in **Xcode 26.2 or later**, select the **BumpyRide Clip** scheme and **My Mac**, then Run. The shell targets **macOS 26.2+**. Use your development signing team if Xcode requests one.
+
+The native app uses SwiftUI and AVFoundation. It has no package dependencies and needs no Node server, FFmpeg installation, or network connection. It follows macOS light/dark appearance with BumpyRide’s green accents and a navy/mint clip icon.
+
+For a local ad-hoc signed build:
+
+```sh
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild \
+  -project 'BumpyRide Clip/BumpyRide Clip.xcodeproj' \
+  -scheme 'BumpyRide Clip' -configuration Release \
+  -derivedDataPath output/native \
+  CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO build
+```
+
+The result is `output/native/Build/Products/Release/BumpyRide Clip.app`. This is a local build, not a notarized distribution.
+
+## Build a DMG
+
+Run `scripts/build-dmg.sh --local` for an isolated, universal local-test package.
+For a Developer ID signed and notarized release, see [distribution instructions](docs/distribution.md).
+The script excludes sample footage, checks bundle contents, and preserves running development builds.
+
+## Review a ride
+
+1. **Choose Ride** (⌘O). Choose your BumpyRide Rides folder once to grant access; it is remembered on this Mac. The selector lists titles, actual ride dates, durations, report counts, and Video Sync counts, newest first. Search by title or filename, or show only rides with reports. **Open a File…** remains available for individual ride JSON or saved projects. Download cloud-only files in Finder and Refresh if needed. Hard brakes and GPS points are discarded.
+2. **Link Videos**. Select the original MOV/MP4 files. **Manage Videos** sets recording order and any actual gaps between files. Split camera files normally have zero gap. Camera filenames and embedded dates never determine alignment.
+3. **Video Sync** sets the first frame’s real-world time. A single Video Sync report is selected automatically; choose a marker if there are several, or enter a manual time if none exists. A positive adjustment moves the recording start later.
+4. Select a report to preview its clip. Default handles are **15 seconds before and 5 seconds after**. Edit either handle with numbers, sliders, or steppers. **Jump to Report** seeks to the marked moment. Previews cross file boundaries without creating video copies.
+5. **Export Clip** (⌘E) saves an MP4 at your chosen location. Select several reports and **Export Selected Clips** to combine them chronologically. Overlapping clips retain their separate context. The first clip determines output dimensions and frame rate; other segments are scaled and letterboxed. Audio is retained where present. Existing exports are not overwritten.
+6. **Save Project** (⌘S) saves a small `.bumpyclip` JSON file with edits, sync, selection/review state, source fingerprints, and sandbox file bookmarks. Finder double-click, Open With, Dock drops, and **File → Open Recent** open these projects. Older `.bumpyclip.json` projects and ride JSON can still be opened through the app or Finder’s Open With. The app is an alternate JSON handler and does not claim every `.json` file. Version 1 projects from the browser app can be opened; relink their originals once. Native projects retain the same format with optional bookmark fields, and the browser picker accepts both extensions.
+7. **Finish Project** in the toolbar’s More menu clears the current autosave and releases video references, offering to save edits first. Original videos and exported clips are preserved. Quitting autosaves metadata and cancels unfinished exports.
+
+An event outside the footage cannot be exported. Handles are clamped at the beginning/end of footage. Clips spanning a declared recording gap require shorter handles or a corrected gap.
+
+### Try a sample
+
+Choose **Try a sample project** on the welcome screen, or **Load Sample Project**
+in the File or More menu. The app generates a short 640×360 synthetic cycling
+animation with close-call, blocked-lane, and custom reports. Trim, calibrate, and
+export it using the regular controls. The UI and video identify it as synthetic.
+No camera footage, GPS data, download, or bundled video is needed.
+
+Generated footage lives in this session’s temporary directory and is removed when
+you leave the sample or quit. The sample never replaces the last real project's
+autosave. You may save sample edits as a metadata-only project; the Mac app
+regenerates its video when reopened. This generation marker is a native extension;
+sample projects need the Mac app to recreate their footage. Real projects remain
+compatible with the browser app.
+
+## Storage and privacy
+
+- Originals are **referenced in place**, never copied into a project or the app bundle. Files over 4 GB are supported.
+- Security-scoped bookmarks restore access on this Mac when possible. Missing or changed files require relinking; name, size, duration, and modification time are checked. Native bookmarks may contain local file-location information, so project files should be treated as personal metadata.
+- The save panel calls out the report times and local file-location information before you save or share a project.
+- Autosave lives in the app’s sandbox Application Support directory. Only the latest project is restored on launch; save separate project files to retain multiple rides.
+- Previews use in-memory compositions. Exports render to a temporary file, copy to the chosen destination, then remove the temporary video. Cancellation/quit removes unfinished renders; abandoned render directories are reclaimed after a crash on the next launch.
+- **`sample_video/` is external test material only.** It is git-ignored, outside the Xcode source/resource group, and absent from the app bundle. No videos, browser assets, Node modules, or FFmpeg binaries are bundled.
+
+## Tests
+
+```sh
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+  swift test --package-path 'BumpyRide Clip'
+
+# Optional: also test an audio-preserving cut across the two external camera files.
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+  BUMPYRIDE_SAMPLE_VIDEO_DIR="$PWD/sample_video" \
+  swift test --package-path 'BumpyRide Clip'
+```
+
+Tests cover ride parsing, sync choice, timeline boundaries/gaps, project compatibility, source identity, and actual AVFoundation exports across generated video files with different sizes/frame rates. Generated media is temporary and cleaned up. The optional camera test reads the originals without copying them.
+
+The app icon can be regenerated with `swift scripts/generate-macos-icon.swift` from the repository root.
+
+The Node browser app is maintained alongside the native app for Windows, Linux, and macOS. See [browser setup and data-contract notes](docs/browser-app.md). Its tests run with `npm test`.
+
+### Calibration and batch timing
+
+**Calibrate video sync** lives beside the clip preview in both apps. Use 0.1-second earlier/later nudges, enter a start correction, or pause on the matching frame and choose **Match event to this frame** (web: **Match event to paused frame**). Calibration updates the whole ride and is saved in the project. Positive correction means the camera started later than the sync reference; events move earlier in the recording. Reset correction returns to the original sync reference. The preview keeps the current recording position when it remains inside the adjusted clip; otherwise it clamps to the nearest clip edge.
+
+A clip-relative bar marks the event and the current playback position. A countdown changes to **EVENT RECORDED** at the marker, then shows elapsed time since the event. The cue is for review only and is not burned into exports. On the web, a rendered compatible preview must be rebuilt after calibration changes if the original codec cannot play directly.
+
+Check two or more reports, set before/after values on the current report, and choose **Apply timing to N selected clips**. This applies to all checked reports, including ones hidden by a filter, and preserves selection and review flags. New clips and Reset use **15s before / 5s after**; reopening a project preserves explicit saved timings.

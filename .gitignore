@@ -148,3 +148,15 @@ sample_video/
 output/
 .playwright-cli/
 *.bumpyclip.json
+*.bumpyclip
+
+# Native build products
+.build/
+DerivedData/
+
+# Personal Xcode UI state and signing credentials
+xcuserdata/
+*.xcuserstate
+*.p8
+*.p12
+*.mobileprovision

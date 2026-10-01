@@ -88,7 +88,7 @@ export function resolveClip(event, edit, videoStart, sources) {
   const segments = segmentsFor(sources);
   const offset = timestamp(event.timestamp) - timestamp(videoStart);
   const before = Number(edit?.before ?? 15),
-    after = Number(edit?.after ?? 15);
+    after = Number(edit?.after ?? 5);
   if (
     ![before, after].every((n) => Number.isFinite(n) && n >= 0) ||
     before + after <= 0
@@ -177,7 +177,7 @@ export function validateProject(raw) {
   for (const e of ride.events) {
     const saved = raw.edits?.[e.id] || {};
     const before = Number(saved.before ?? 15),
-      after = Number(saved.after ?? 15);
+      after = Number(saved.after ?? 5);
     if (
       ![before, after].every((n) => Number.isFinite(n) && n >= 0) ||
       before + after <= 0
@@ -218,4 +218,29 @@ export function rideForProject(ride) {
       isCustom: e.isCustom,
     })),
   };
+}
+
+// Keep the reference marker fixed while correcting the recording start for every report.
+export function calibratedStart(videoStart, oldAdjustment, newAdjustment) {
+  if (![oldAdjustment, newAdjustment].every(Number.isFinite))
+    throw new Error("Enter a finite sync adjustment.");
+  return new Date((timestamp(videoStart) + newAdjustment - oldAdjustment) * 1000).toISOString();
+}
+export function applySelectedTiming(events, edits, before, after) {
+  if (![before, after].every((n) => Number.isFinite(n) && n >= 0) || before + after <= 0)
+    throw new Error("Clip handles must be non-negative and total more than zero.");
+  const result = Object.assign(Object.create(null), edits);
+  for (const event of events) {
+    if (edits[event.id]?.selected)
+      result[event.id] = { ...edits[event.id], before, after };
+  }
+  return result;
+}
+// Position in the current clip, also used for rendered compatible previews.
+export function eventCue(clip, recordingTime) {
+  const eventTime = clip.offset - clip.start;
+  const delta = recordingTime - clip.offset;
+  return { eventTime, delta, atEvent: Math.abs(delta) <= 0.15,
+    eventFraction: Math.max(0, Math.min(1, eventTime / clip.duration)),
+    playheadFraction: Math.max(0, Math.min(1, (recordingTime - clip.start) / clip.duration)) };
 }

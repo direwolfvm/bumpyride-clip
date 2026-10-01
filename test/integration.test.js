@@ -4,7 +4,34 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { ffmpeg, ffprobe, run, probe } from "../lib/media.js";
-import { startServer, parseRange } from "../server.js";
+import { startServer, parseRange, listRides } from "../server.js";
+
+test("ride selector uses ride dates and report metadata, isolates unreadable files", async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "bumpyride-catalog-"));
+  try {
+    const ride = { id: "ride", title: "Morning commute", startedAt: "2026-01-01T12:00:00Z", endedAt: "2026-01-01T13:00:00Z",
+      closeCallEvents: [{ id: "close", timestamp: "2026-01-01T12:01:00Z" }],
+      otherEvents: [{ id: "sync", kind: "Video Sync", timestamp: "2026-01-01T12:00:00Z" }],
+      brakeEvents: [{ timestamp: "2026-01-01T12:02:00Z" }], points: [{ latitude: 1 }] };
+    await fs.writeFile(path.join(dir, "renamed-ride.json"), JSON.stringify(ride));
+    await fs.writeFile(path.join(dir, "newer.json"), JSON.stringify({ ...ride, title: "Later ride", startedAt: "2026-02-01T12:00:00Z", endedAt: "2026-02-01T13:00:00Z", closeCallEvents: [], otherEvents: [] }));
+    await fs.utimes(path.join(dir, "newer.json"), new Date(0), new Date(0));
+    await fs.writeFile(path.join(dir, "bad.json"), "{}");
+    await fs.writeFile(path.join(dir, "ignore.mov"), "");
+    await fs.mkdir(path.join(dir, "folder.json"));
+    const entries = await listRides(dir);
+    assert.equal(entries.length, 3);
+    assert.equal(entries[0].title, "Later ride");
+    assert.equal(entries[0].reports, 0);
+    assert.equal(entries[0].syncs, 0);
+    assert.equal(entries[1].duration, 3600);
+    assert.equal(entries[1].reports, 1);
+    assert.equal(entries[1].syncs, 1);
+    assert.ok(entries[2].issue);
+    assert.ok(!JSON.stringify(entries).includes("latitude"));
+    await assert.rejects(listRides(path.join(dir, "missing")), /Rides folder unavailable/);
+  } finally { await fs.rm(dir, { recursive: true, force: true }); }
+});
 
 test("byte ranges support seeking, suffixes and invalid-range rejection", () => {
   assert.deepEqual(parseRange("bytes=0-9", 100), { start: 0, end: 9 });
